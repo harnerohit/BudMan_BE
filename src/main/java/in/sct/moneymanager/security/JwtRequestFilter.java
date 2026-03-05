@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -25,14 +27,34 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private static final List<String> PUBLIC_ENDPOINTS = List.of(
+            "/status",
+            "/health",
+            "/register",
+            "/login",
+            "/activate",
+            "/swagger-ui",
+            "/v3/api-docs"
+    );
+
     private final UserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain)
             throws ServletException, IOException {
+
+        String path = request.getServletPath();
+
+        for (String endpoint : PUBLIC_ENDPOINTS) {
+            if (path.contains(endpoint)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+        }
 
         try {
             final String authHeader = request.getHeader("Authorization");
@@ -45,23 +67,28 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(email);
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 if (jwtUtil.validateToken(jwt, userDetails)) {
+
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    logger.debug("Authenticated user: {}", email);
                 }
             }
+
         } catch (Exception ex) {
             logger.error("Authentication error: {}", ex.getMessage());
-            // Clear context on any authentication failure
             SecurityContextHolder.clearContext();
         }
 
