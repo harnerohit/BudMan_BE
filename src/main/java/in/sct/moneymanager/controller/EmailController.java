@@ -1,7 +1,7 @@
 package in.sct.moneymanager.controller;
 
 import in.sct.moneymanager.entity.ProfileEntity;
-import in.willWin.moneymanager.service.*;
+
 import in.sct.moneymanager.service.*;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;

@@ -21,24 +21,33 @@ public class ProfileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String fullName;
-    @Column(unique = true)
+
+    @Column(unique = true, nullable = false)
     private String email;
+
     private String password;
+
     private String profileImageUrl;
-    @Column(updatable = false)
+
     @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-    private Boolean isActive;
+
+    // PostgreSQL-compatible Boolean
+    @Column(nullable = false)
+    private Boolean isActive = true;
+
     private String activationToken;
 
     @PrePersist
     public void prePersist() {
-        if (this.isActive == null) {
-            isActive = false;
+        if (isActive == null) {
+            isActive = true;
         }
     }
-
 }
