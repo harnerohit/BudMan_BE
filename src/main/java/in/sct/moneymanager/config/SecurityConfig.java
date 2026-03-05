@@ -32,7 +32,6 @@ public class SecurityConfig {
     private final JwtRequestFilter jwtRequestFilter;
 
     @Value("${money.manager.frontend.url}")
-    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -85,7 +84,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                frontendUrl
+                "https://*.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
